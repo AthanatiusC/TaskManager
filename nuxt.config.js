@@ -58,12 +58,18 @@ export default {
   /*
   ** Nuxt.js dev-modules
   */
-  buildModules: [],
+  buildModules: [
+    '@nuxtjs/moment'
+  ],
+  moment: {
+    locales: ['id']
+  },
   /*
   ** Nuxt.js modules
   */
   modules: [
     '@nuxtjs/pwa',
+    '@nuxtjs/axios',
     'nuxt-i18n',
     'cookie-universal-nuxt',
   ],
@@ -103,5 +109,8 @@ export default {
         ]
       ]
     }
-  }
+  },
+  axios: {
+    baseURL: 'http://localhost:8088/api/v1', // Used as fallback if no runtime config is provided
+  },
 }

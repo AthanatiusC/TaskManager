@@ -28,44 +28,9 @@
     <div class="col-lg-5">
       <card type="tasks" :header-classes="{ 'text-right': isRTL }">
         <template slot="header" class="d-inline">
-          <h6 class="title d-inline">Tasks (5)</h6>
+          <h6 class="title d-inline">Current Tasks ({{incompleteData.length}})</h6>
           <p class="card-category d-inline">Today</p>
           <base-button type="default" style="display:inline-block;float:right;" @click="modals.taskmodal = true">Add New Task</base-button>
-          <div>
-            <modal :show.sync="modals.taskmodal" body-classes="p-0" modal-classes="modal-dialog-centered modal-sm">
-                <card type="secondary"
-                      header-classes="bg-white pb-5"
-                      body-classes="px-lg-5 py-lg-5"
-                      class="border-0 mb-0">
-                    <template>
-                        <div class="text-center text-muted mb-4">
-                            <big>Create New Task</big>
-                        </div>
-                        <form role="form">
-                          <base-input type="email" label="Task Name" v-model="name" placeholder="Enter Task Name"/>
-                          <div class="form-row">
-                            <base-input class="col-md-6">
-                              <el-date-picker l-date-picker v-model="startpicker" type="datetime" placeholder="Start">
-                              </el-date-picker>
-                            </base-input>
-                            <base-input class="col-md-6">
-                              <el-date-picker l-date-picker v-model="endpicker" type="datetime" placeholder="End">
-                              </el-date-picker>
-                            </base-input>
-                          </div>
-                          <base-input type="text" label="Location" v-model="place" placeholder="1234 Main St"/>
-                          <base-input label="Description">
-                            <textarea class="form-control" v-model="description" id="exampleFormControlTextarea1" rows="3"></textarea>
-                          </base-input>
-                          <base-input>
-                            <base-checkbox v-model="important">Important</base-checkbox>
-                          </base-input>
-                          <base-button type="primary" @click="AddTask()">Create Task</base-button>
-                        </form>
-                    </template>
-                </card>
-            </modal>
-          </div>
         </template>
         <div class="table-full-width table-responsive">
           <task-list></task-list>
@@ -77,10 +42,16 @@
     <div class="col-lg-7">
       <card card-body-classes="table-full-width">
         <div >
-          <h4 slot="header" class="card-title" style="display:inline-block;">Task List</h4>
+          <h4 slot="header" class="card-title" style="display:inline-block;">Completed Task</h4>
         </div>
         
-        <el-table :data="TaskData">
+        <el-table :data="completedData">
+          <el-table-column
+            min-width="150"
+            sortable
+            label="ID"
+            property="id"
+          ></el-table-column>
           <el-table-column
             min-width="150"
             sortable
@@ -92,6 +63,7 @@
             sortable
             label="Time"
             property="time"
+            :formatter="timeFormat"
           ></el-table-column>
           <el-table-column
             min-width="150"
@@ -106,9 +78,41 @@
             header-align="right"
             label="Status"
             property="status"
+            :formatter="statusFormat"
           ></el-table-column>
         </el-table>
       </card>
+    </div>
+
+    <!-- MODAL -->
+    <div>
+      <modal :show.sync="modals.taskmodal" body-classes="p-0" modal-classes="modal-dialog-centered modal-sm">
+          <card type="secondary"
+                header-classes="bg-white pb-5"
+                body-classes="px-lg-5 py-lg-5"
+                class="border-0 mb-0">
+              <template>
+                  <div class="text-center text-muted mb-4">
+                      <big>Create New Task</big>
+                  </div>
+                  <form role="form">
+                    <base-input type="email" label="Task Name" v-model="name" placeholder="Enter Task Name"/>
+                    <base-input>
+                      <el-date-picker l-date-picker v-model="startpicker" type="datetime" placeholder="Due time">
+                      </el-date-picker>
+                    </base-input>
+                    <base-input type="text" label="Location" v-model="place" placeholder="1234 Main St"/>
+                    <base-input label="Description">
+                      <textarea class="form-control" v-model="description" id="exampleFormControlTextarea1" rows="3"></textarea>
+                    </base-input>
+                    <base-input>
+                      <base-checkbox v-model="important">Important</base-checkbox>
+                    </base-input>
+                    <base-button type="primary" @click="AddTask();$fetch">Create Task</base-button>
+                  </form>
+              </template>
+          </card>
+      </modal>
     </div>
   </div>
 </template>
@@ -152,8 +156,7 @@ export default {
     Modal,
     [DatePicker.name]: DatePicker,
     [TimeSelect.name]: TimeSelect,
-  },
-  data () {
+  },data () {
     return {
       bigLineChart: {
         activeIndex: 0,
@@ -172,6 +175,9 @@ export default {
       modals:{
         taskmodal:false,
       },
+      taskData:undefined,
+      completedData:[],
+      incompleteData:[],
       name:'',
       place:'',
       startpicker: '',
@@ -180,11 +186,18 @@ export default {
       important:false
     };
   },
+  async fetch(){
+    const data = await this.$axios.$get("/task/personal/5fc3dd87caf4ad4491cafe2f")
+    this.taskData = data.data
+    data.data.forEach(item => {
+      if(item.status==true){
+        this.completedData.push(item)
+      }else{
+        this.incompleteData.push(item)
+      }
+    });
+  },
   computed: {
-    TaskData(){
-      console.log(this.$cookies.get('TaskData'))
-      return this.$cookies.get('TaskData')
-    },
     enableRTL () {
       return this.$route.query.enableRTL;
     },
@@ -210,42 +223,29 @@ export default {
       this.$refs.bigChart.updateGradients(chartData);
       this.bigLineChart.chartData = chartData;
       this.bigLineChart.activeIndex = index;
+    },async AddTask(){
+      const obj = {
+          name: this.name,
+          userid:"5fc3dd87caf4ad4491cafe2f",
+          time: this.startpicker,
+          place: this.place,
+          description:this.description,
+          important:this.important,
+          status:true
+        }
+      const res = await this.$axios.$post("/task/",obj)
+      if(res.status){
+        this.modals.taskmodal = false
+      }
     },
-    AddTask(){
-      this.$cookies.parseJSON = false
-      var old=this.$cookies.get("TaskData")
-      // if(old==undefined){
-      //   const obj = [{
-      //     id: 1,
-      //     name: this.name,
-      //     time: this.startpicker,
-      //     due:this.endpicker,
-      //     place: this.place,
-      //     description:this.description,
-      //     important:this.important,
-      //     status:true
-      //   },]
-      //   this.$cookies.set('TaskData', obj, {
-      //     path: '/',
-      //     maxAge: 60 * 60 * 24 * 7
-      //   })  
-      // }else{
-      //   DATA.push({
-      //     id: 1,
-      //     name: this.name,
-      //     time: this.startpicker,
-      //     due:this.endpicker,
-      //     place: this.place,
-      //     description:this.description,
-      //     important:this.important,
-      //     status:true
-      //   })
-      //   this.$cookies.set('TaskData', old, {
-      //     path: '/',
-      //     maxAge: 60 * 60 * 24 * 7
-      //   })  
-      // }
-      
+    timeFormat(row,column){
+      return this.$moment(row[column.property]).fromNow()
+    },
+    statusFormat(row,column){
+      if(row[column.property]){
+        return "Completed"
+      }
+      return "Cancelled"
     }
   },
   mounted () {

@@ -1,13 +1,15 @@
 <template>
   <base-table :data="tableData" thead-classes="text-primary">
-    <template slot-scope="{ row }">
+    <!-- <template v-if="$moment(row.time).isAfter($moment())" slot-scope="{ row }"> -->
+    <template  slot-scope="{ row }">
     <td>
-      <p class="title">{{row.time}} - {{ row.name }}</p>
+      <p class="title">{{ row.name }}</p>
+      <b><h5>{{$moment(row.time).fromNow()}}</h5></b>
       <p class="text-muted">{{ row.description }}</p>
     </td>
     <td class="td-actions">
       <el-tooltip content="Cancel task" effect="light" :open-delay="300" placement="top">
-        <base-button type="link">
+        <base-button type="link" @click="DeleteTask(row.id)">
           <i class="tim-icons icon-simple-remove"></i>
         </base-button>
       </el-tooltip>
@@ -33,32 +35,31 @@
 </template>
 <script>
 import { BaseTable } from '@/components';
-
 export default {
   components: {
     BaseTable
   },
   data() {
     return {
-      tableData: [
-        {
-          id: 1,
-          name: 'Buying Vegetables',
-          description:"Lorem ipsum dolor sit amet",
-          time: '08:30 PM',
-          place: 'Pasar Induk',
-          status:true
-        },
-        {
-          id: 1,
-          name: 'Meeting',
-          time: '12:00 PM',
-          description:"Lorem ipsum dolor sit amet",
-          place: 'Workplace Floor 1',
-          status:false
-        },
-      ]
+      tableData:[],
+      currentTime:undefined,
     };
+  },
+  async fetch(){
+    const data = await this.$axios.$get("/task/personal/5fc3dd87caf4ad4491cafe2f")
+    data.data.forEach(item => {
+      if(!item.status){
+        this.tableData.push(item)
+      }
+      this.tableData.sort((a,b)=>{
+        b.time - a.time
+      })
+    });
+  },
+  methods:{
+    async DeleteTask(id){
+      const data = await this.$axios.$get("/task/delete/"+id)
+    }
   }
 };
 </script>

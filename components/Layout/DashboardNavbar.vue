@@ -4,6 +4,7 @@
     class="navbar-absolute top-navbar"
     type="white"
     :transparent="true"
+    v-if="$cookies.get('loggedIn')"
   >
     <div slot="brand" class="navbar-wrapper">
       <div
@@ -20,7 +21,7 @@
     </div>
 
     <ul class="navbar-nav" :class="$rtl.isRTL ? 'mr-auto' : 'ml-auto'">
-      <div class="search-bar input-group" @click="searchModalVisible = true">
+      <!-- <div class="search-bar input-group" @click="searchModalVisible = true">
         <button
           class="btn btn-link"
           id="search-button"
@@ -29,7 +30,6 @@
         >
           <i class="tim-icons icon-zoom-split"></i>
         </button>
-        <!-- You can choose types of search input -->
       </div>
       <modal
         :show.sync="searchModalVisible"
@@ -80,7 +80,7 @@
         <li class="nav-link">
           <a href="#" class="nav-item dropdown-item">Another one</a>
         </li>
-      </base-dropdown>
+      </base-dropdown> -->
       <base-dropdown
         tag="li"
         :menu-on-right="!$rtl.isRTL"
@@ -92,19 +92,16 @@
         <template
           slot="title"
         >
-          <div class="photo"><img src="img/mike.jpg" /></div>
+          <div class="photo"><img src="http://demos.creative-tim.com/nuxt-black-dashboard-pro/img/icon-nuxt.svg" /></div>
           <b class="caret d-none d-lg-block d-xl-block"></b>
           <p class="d-lg-none">Log out</p>
         </template>
         <li class="nav-link">
-          <a href="#" class="nav-item dropdown-item">Profile</a>
-        </li>
-        <li class="nav-link">
-          <a href="#" class="nav-item dropdown-item">Settings</a>
+          <nuxt-link to="/user" class="nav-item dropdown-item">Profile</nuxt-link>
         </li>
         <div class="dropdown-divider"></div>
         <li class="nav-link">
-          <a href="#" class="nav-item dropdown-item">Log out</a>
+          <a href="#" class="nav-item dropdown-item" @click="logout()">Log out</a>
         </li>
       </base-dropdown>
     </ul>
@@ -115,6 +112,7 @@ import { CollapseTransition } from 'vue2-transitions';
 import { BaseNav, Modal } from '@/components';
 
 export default {
+  middleware:'auth',
   components: {
     CollapseTransition,
     BaseNav,
@@ -142,6 +140,13 @@ export default {
     };
   },
   methods: {
+    logout(){
+      this.$cookies.removeAll()
+      this.$cookies.set('loggedIn',false)
+      // this.$auth.redirect('home')
+      window.location.reload(true)
+      // this.$router.push({url:'/login'})
+    },
     capitalizeFirstLetter(string) {
       if (!string || typeof string !== 'string') {
         return ''

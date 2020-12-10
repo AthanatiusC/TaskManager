@@ -1,5 +1,7 @@
 <template>
   <table class="table tablesorter" :class="tableClass">
+    <h3 class="text-center text-muted" v-if="data.length<1">No data available</h3>
+    
     <thead :class="theadClasses">
       <tr>
         <slot name="columns" :columns="columns">
@@ -13,7 +15,6 @@
           <td
             v-for="(column, index) in columns"
             :key="index"
-            v-if="hasValue(item, column)"
           >
             {{ itemValue(item, column) }}
           </td>

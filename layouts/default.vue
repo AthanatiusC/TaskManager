@@ -5,6 +5,7 @@
       :background-color="sidebarBackground"
       :short-title="$t('sidebar.shortTitle')"
       :title="$t('sidebar.title')"
+      
     >
       <template slot-scope="props" slot="links">
         <sidebar-item
@@ -71,12 +72,12 @@
             path: localePath('/rtl', 'ar') }"
         ></sidebar-item> -->
 
-        <li class="active-pro">
+        <!-- <li class="active-pro">
           <a href="https://www.creative-tim.com/product/nuxt-black-dashboard-pro" target="_blank">
             <i class="tim-icons icon-spaceship"></i>
             <p>Upgrade to PRO</p>
           </a>
-        </li>
+        </li> -->
       </template>
     </side-bar>
     <!--Share plugin (for demo purposes). You can remove it if don't plan on using it-->
@@ -86,7 +87,7 @@
       <router-view name="header"></router-view>
 
       <div
-        :class="{ content: !isFullScreenRoute }"
+        :class="{ content: !isFullScreenRoute,content: $cookies.get('loggedIn') }"
         @click="toggleSidebar"
       >
         <zoom-center-transition :duration="200" mode="out-in">
@@ -94,7 +95,7 @@
           <nuxt></nuxt>
         </zoom-center-transition>
       </div>
-      <content-footer v-if="!isFullScreenRoute"></content-footer>
+      <content-footer v-if="$cookies.get('loggedIn')"></content-footer>
     </div>
   </div>
 </template>

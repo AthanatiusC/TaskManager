@@ -25,33 +25,27 @@
       </card>
     </div>
     <!-- TASK HERE -->
-    <div class="col-lg-5">
+    <div class="col-lg-5" v-if="incompleteData">
       <card type="tasks" :header-classes="{ 'text-right': isRTL }">
         <template slot="header" class="d-inline">
           <h6 class="title d-inline">Current Tasks ({{incompleteData.length}})</h6>
-          <p class="card-category d-inline">Today</p>
+          <p class="card-category d-inline">This Week</p>
           <base-button type="default" style="display:inline-block;float:right;" @click="modals.taskmodal = true">Add New Task</base-button>
         </template>
         <div class="table-full-width table-responsive">
-          <task-list></task-list>
+          <task-list :data="incompleteData" :refresh="Refresh"></task-list>
         </div>
       </card>
     </div>
 
     <!-- STRIPPED TABLE HERE -->
-    <div class="col-lg-7">
+    <div class="col-lg-7" v-if="completedData">
       <card card-body-classes="table-full-width">
         <div >
           <h4 slot="header" class="card-title" style="display:inline-block;">Completed Task</h4>
         </div>
         
         <el-table :data="completedData">
-          <el-table-column
-            min-width="150"
-            sortable
-            label="ID"
-            property="id"
-          ></el-table-column>
           <el-table-column
             min-width="150"
             sortable
@@ -80,10 +74,18 @@
             property="status"
             :formatter="statusFormat"
           ></el-table-column>
+          <el-table-column
+            min-width="150"
+            sortable
+            label="Desc"
+            property="description"
+          ></el-table-column>
         </el-table>
+        <!-- <template>
+          <base-pagination type="success" :page-count="10" v-model="defaultPagination"></base-pagination>
+        </template> -->
       </card>
     </div>
-
     <!-- MODAL -->
     <div>
       <modal :show.sync="modals.taskmodal" body-classes="p-0" modal-classes="modal-dialog-centered modal-sm">
@@ -96,19 +98,19 @@
                       <big>Create New Task</big>
                   </div>
                   <form role="form">
-                    <base-input type="email" label="Task Name" v-model="name" placeholder="Enter Task Name"/>
+                    <base-input type="email" label="Task Name" v-model="task.name" placeholder="Enter Task Name"/>
                     <base-input>
-                      <el-date-picker l-date-picker v-model="startpicker" type="datetime" placeholder="Due time">
+                      <el-date-picker l-date-picker v-model="task.time" type="datetime" placeholder="Due time">
                       </el-date-picker>
                     </base-input>
-                    <base-input type="text" label="Location" v-model="place" placeholder="1234 Main St"/>
+                    <base-input type="text" label="Location" v-model="task.place" placeholder="1234 Main St"/>
                     <base-input label="Description">
-                      <textarea class="form-control" v-model="description" id="exampleFormControlTextarea1" rows="3"></textarea>
+                      <textarea class="form-control" v-model="task.description" id="exampleFormControlTextarea1" rows="3"></textarea>
                     </base-input>
-                    <base-input>
+                    <!-- <base-input>
                       <base-checkbox v-model="important">Important</base-checkbox>
-                    </base-input>
-                    <base-button type="primary" @click="AddTask();$fetch">Create Task</base-button>
+                    </base-input> -->
+                    <base-button type="primary" @click="AddTask()">Create Task</base-button>
                   </form>
               </template>
           </card>
@@ -125,10 +127,13 @@ import config from '@/config';
 import {Modal} from '@/components'
 import { Table, TableColumn } from 'element-ui';
 import {DatePicker, TimeSelect} from 'element-ui'
+import {BasePagination} from '@/components'
 
-let bigChartData = [
-  [100, 70, 90, 70, 85, 60, 75]
-]
+import TaskListVue from '~/components/Dashboard/TaskList.vue';
+
+// let bigChartData = [
+//   [this.completedData.length, 70, 90, 70, 85, 60, 75]
+// ]
 let bigChartLabels = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
 let bigChartDatasetOptions = {
   fill: true,
@@ -148,6 +153,7 @@ let bigChartDatasetOptions = {
 export default {
   name: 'dashboard',
   components: {
+    BasePagination,
     LineChart,
     BarChart,
     TaskList,
@@ -158,12 +164,27 @@ export default {
     [TimeSelect.name]: TimeSelect,
   },data () {
     return {
+      modals:{
+        taskmodal:false,
+      },
+      taskData:undefined,
+      completedData:[],
+      incompleteData:[],
+      task:{
+        userid:this.$cookies.get("_id"),
+        name:'',
+        place:'',
+        time: null,
+        description:'',
+        status:false
+      },
+      important:false,
+      defaultPagination: 1,
       bigLineChart: {
         activeIndex: 0,
         chartData: {
           datasets: [{
             ...bigChartDatasetOptions,
-            data: bigChartData[0]
           }],
           labels: bigChartLabels
         },
@@ -172,30 +193,33 @@ export default {
         gradientStops: [1, 0.4, 0],
         categories: []
       },
-      modals:{
-        taskmodal:false,
-      },
-      taskData:undefined,
-      completedData:[],
-      incompleteData:[],
-      name:'',
-      place:'',
-      startpicker: '',
-      endpicker: '',
-      description:'',
-      important:false
     };
   },
   async fetch(){
-    const data = await this.$axios.$get("/task/personal/5fc3dd87caf4ad4491cafe2f")
-    this.taskData = data.data
-    data.data.forEach(item => {
-      if(item.status==true){
-        this.completedData.push(item)
-      }else{
-        this.incompleteData.push(item)
-      }
-    });
+    var id = this.$cookies.get("_id")
+    var token = this.$cookies.get("token")
+    this.$axios.setHeader("auth_key",token)
+    this.$axios.setHeader("user_id",id)
+    const data = await this.$axios.$get("/task/personal/"+id+"/").then((data)=>{
+      this.taskData = data.data
+      data.data.forEach(item => {
+        if(item.status==true){
+          this.completedData.push(item)
+        }else{
+          this.incompleteData.push(item)
+        }
+      });
+      this.incompleteData.sort((a,b)=>{
+        return new Date(b.time) - new Date(a.time);
+      })
+      this.completedData.sort((a,b)=>{
+        return new Date(b.time) - new Date(a.time);
+      })
+    })
+    
+    // var groups = this.completedData.groupBy(this.completedData,function(d){
+    //     console.log(moment(d.data_emissione).day())
+    // });
   },
   computed: {
     enableRTL () {
@@ -213,33 +237,41 @@ export default {
   },
   methods: {
     initBigChart (index) {
+      this.completedData.forEach(item => {
+        console.log(this.$moment(item.time,"YYYY-MM-DD").format("MMM"))        
+      });
       let chartData = {
         datasets: [{
           ...bigChartDatasetOptions,
-          data: bigChartData[index]
+          data: [1,3,3,2,1,0,4]
         }],
         labels: bigChartLabels
       };
       this.$refs.bigChart.updateGradients(chartData);
       this.bigLineChart.chartData = chartData;
       this.bigLineChart.activeIndex = index;
+    },Refresh(){
+      this.incompleteData.splice(0)
+      this.completedData.splice(0)
+      this.$fetch()
+      // console.log("Refresh called")
     },async AddTask(){
-      const obj = {
-          name: this.name,
-          userid:"5fc3dd87caf4ad4491cafe2f",
-          time: this.startpicker,
-          place: this.place,
-          description:this.description,
-          important:this.important,
-          status:true
-        }
-      const res = await this.$axios.$post("/task/",obj)
+      const res = await this.$axios.$post("task/",this.task)
       if(res.status){
         this.modals.taskmodal = false
+        this.$notify({
+          message:res.message,
+          timeout: 3000,
+          icon: 'tim-icons icon-bell-55',
+          horizontalAlign: "center",
+          verticalAlign: "top",
+          type: "success"
+        });
+        this.Refresh()
       }
     },
     timeFormat(row,column){
-      return this.$moment(row[column.property]).fromNow()
+      return this.$moment(row[column.property]).format("YYYY MMM DD")
     },
     statusFormat(row,column){
       if(row[column.property]){

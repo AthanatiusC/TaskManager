@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar" :data="backgroundColor">
+  <div v-if="$cookies.get('loggedIn')" class="sidebar" :data="backgroundColor">
     <div class="sidebar-wrapper" ref="sidebarScrollArea">
       <div class="logo">
         <a href="http://www.creative-tim.com" class="simple-text logo-mini">

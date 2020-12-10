@@ -14,7 +14,7 @@
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  */
 export default {
-  mode: 'universal',
+  mode: 'spa',
   /*
   ** Headers of the page
   */
@@ -62,17 +62,46 @@ export default {
     '@nuxtjs/moment'
   ],
   moment: {
-    locales: ['id']
   },
   /*
   ** Nuxt.js modules
   */
   modules: [
     '@nuxtjs/pwa',
+    '@nuxtjs/auth-next',
     '@nuxtjs/axios',
     'nuxt-i18n',
     'cookie-universal-nuxt',
   ],
+  auth: {
+    cookie: {
+      option: {
+        path:'/'
+      }
+    },
+    strategies: {
+      local: {
+        redirect: {
+          login: '/login',
+          logout: '/',
+          home:'/'
+        }, token: {
+          required:false
+          // property:"token"
+        }, user: {
+          property: "data",
+          autoFetch:false
+        },
+        endpoints: {
+          login: { url: 'user/auth/', method: 'post',property:"data" },
+          user:{url:'user/',property:'data.data',method:'get'},
+          logout:false
+        }
+      }
+    }
+  },router: {
+    middleware: ['userAuth']
+  },
   i18n: {
     locales: [
       {
